@@ -797,7 +797,7 @@ export default function SoloDiarioApp() {
   const pdfSheetRef = useRef(null);
 
   useEffect(() => {
-    supabase.auth.onAuthStateChanged((user) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, user) => {
       if (user) {
         setLoggedIn(true);
         loadData();
@@ -805,6 +805,7 @@ export default function SoloDiarioApp() {
         setLoggedIn(false);
       }
     });
+    return () => subscription?.unsubscribe();
   }, []);
 
   const loadData = async () => {
