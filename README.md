@@ -1,6 +1,6 @@
 # Solo Diario - Gestión de Préstamos y Cobros
 
-Aplicación React + Vite conectada a Supabase para gestionar préstamos y cobros diarios con exportación de PDF.
+Aplicación React + Vite + Supabase para gestionar préstamos, cobros diarios y exportar recibos en PDF. Completamente funcional con autenticación segura.
 
 ## 🚀 Instalación y Setup
 
