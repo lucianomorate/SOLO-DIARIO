@@ -1,3 +1,4 @@
+// Solo Diario - Loan Management System
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import html2canvas from 'html2canvas';
