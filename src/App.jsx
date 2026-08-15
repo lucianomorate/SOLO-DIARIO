@@ -978,7 +978,7 @@ export default function SoloDiarioApp() {
           <Sidebar screen={screen} goTo={goTo} onLogout={logout} />
           <div className="flex-1 flex flex-col min-h-screen">
             <TopBar screen={screen} goBack={goBack} dateLabel={dateLabel} />
-            <main className="flex-1 pb-28 md:pb-10">
+            <main className="flex-1 sd-main-content">
               {screen === 'dashboard' && (
                 <Dashboard
                   clients={enrichedClients}
