@@ -831,7 +831,11 @@ export default function SoloDiarioApp() {
 
       if (clientesErr) throw clientesErr;
 
-      setClients(clientesData || []);
+      const { data: prestamosData, error: prestamosErr } = await supabase
+        .from('prestamos')
+        .select('*');
+
+      if (prestamosErr) throw prestamosErr;
 
       const { data: cuotasData, error: cuotasErr } = await supabase
         .from('cuotas')
@@ -840,10 +844,21 @@ export default function SoloDiarioApp() {
       if (cuotasErr) throw cuotasErr;
 
       const grouped = {};
+      const prestamoMap = {};
+      (prestamosData || []).forEach((p) => { prestamoMap[p.id] = p; });
       (cuotasData || []).forEach((c) => {
         if (!grouped[c.prestamo_id]) grouped[c.prestamo_id] = [];
         grouped[c.prestamo_id].push(c);
       });
+
+      const enrichedClients = (clientesData || []).map((c) => {
+        const prestamoIds = Object.keys(prestamoMap).filter((pid) => prestamoMap[pid].cliente_id === c.id);
+        const monto = prestamoIds.length > 0 ? prestamoMap[prestamoIds[0]].monto_prestado : 0;
+        const valor_cuota = prestamoIds.length > 0 ? prestamoMap[prestamoIds[0]].valor_cuota : 0;
+        return { ...c, monto_prestado: monto, valor_cuota };
+      });
+
+      setClients(enrichedClients);
       setCuotasPorCliente(grouped);
     } catch (err) {
       alert('Error al cargar datos: ' + err.message);
@@ -961,7 +976,8 @@ export default function SoloDiarioApp() {
   const deleteTarget = clients.find((c) => c.id === deleteTargetId);
 
   const selectedPrestamo = selected ? Object.keys(cuotasPorCliente).find((pid) => {
-    return true;
+    const cuotas = cuotasPorCliente[pid] || [];
+    return cuotas.length > 0 && cuotas.some((c) => c.prestamo_id);
   }) : null;
 
   const overdueClients = clients.filter((c) => {
@@ -970,11 +986,15 @@ export default function SoloDiarioApp() {
 
   const enriquecerClientes = (clientList) => {
     return clientList.map((c) => {
-      const cuotasCliente = Object.values(cuotasPorCliente).flat();
-      const completed = cuotasCliente.length > 0 && cuotasCliente.every((cu) => cu.pagada);
+      const prestamoIds = Object.keys(cuotasPorCliente).filter((pid) => {
+        const cuotas = cuotasPorCliente[pid] || [];
+        return cuotas.some((cu) => cu.prestamo_id && cuotas.length > 0) || Object.values(cuotasPorCliente).flat().some((q) => q.prestamo_id);
+      });
+      const clientCuotas = prestamoIds.length > 0 ? cuotasPorCliente[prestamoIds[0]] || [] : [];
+      const completed = clientCuotas.length > 0 && clientCuotas.every((cu) => cu.pagada);
       let badge = { cls: 'pending', text: 'Pendiente' };
       if (completed) badge = { cls: 'paid', text: 'Completado' };
-      return { ...c, badgeStatus: badge, valor_cuota: 0, streak: [null, null, null, null, null, null, null] };
+      return { ...c, badgeStatus: badge, streak: [null, null, null, null, null, null, null] };
     });
   };
 
@@ -1026,7 +1046,7 @@ export default function SoloDiarioApp() {
               {screen === 'pago' && selected && (
                 <PagoScreen
                   client={selected}
-                  cuotas={Object.values(cuotasPorCliente).flat().filter(() => true) || []}
+                  cuotas={selectedPrestamo ? (cuotasPorCliente[selectedPrestamo] || []) : []}
                   onConfirm={() => confirmPago(selected.id, selectedPrestamo)}
                   onDownload={() => setPdfPreviewId(selected.id)}
                   onDelete={() => setDeleteTargetId(selected.id)}
