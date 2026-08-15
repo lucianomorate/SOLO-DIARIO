@@ -352,11 +352,11 @@ function Agregar({ goTo }) {
 function NuevoClienteForm({ onSave, onCancel, showError }) {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [monto, setMonto] = useState('');
+  const [monto, setMonto] = useState(0);
   const [cuotas, setCuotas] = useState('');
   const [frecuencia, setFrecuencia] = useState('Semana');
   const [fecha, setFecha] = useState('');
-  const [cuotaMonto, setCuotaMonto] = useState('');
+  const [cuotaMonto, setCuotaMonto] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const canSave = nombre.trim() && telefono.trim() && Number(monto) > 0 && Number(cuotas) > 0 && Number(cuotaMonto) > 0 && fecha;
@@ -491,11 +491,11 @@ function NuevoPrestamoPicker({ clients, onPick }) {
 }
 
 function NuevoPrestamoForm({ client, onSave, onCancel }) {
-  const [monto, setMonto] = useState('');
+  const [monto, setMonto] = useState(0);
   const [cuotas, setCuotas] = useState('');
   const [frecuencia, setFrecuencia] = useState('Semana');
   const [fecha, setFecha] = useState('');
-  const [cuotaMonto, setCuotaMonto] = useState('');
+  const [cuotaMonto, setCuotaMonto] = useState(0);
   const [loading, setLoading] = useState(false);
   const canSave = Number(monto) > 0 && Number(cuotas) > 0 && Number(cuotaMonto) > 0 && fecha;
 
