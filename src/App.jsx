@@ -364,7 +364,10 @@ function NuevoClienteForm({ onSave, onCancel, showError }) {
 
       if (clienteErr) throw clienteErr;
 
-      const fechaInicio = new Date(fecha + ' 2026').toISOString().split('T')[0];
+      const meses = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
+      const [dia, mes] = fecha.split(' ');
+      const fechaObj = new Date(2026, meses[mes.toLowerCase()], parseInt(dia));
+      const fechaInicio = fechaObj.toISOString().split('T')[0];
       const { data: prestamo, error: prestamoErr } = await supabase
         .from('prestamos')
         .insert([{
@@ -493,7 +496,10 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const fechaInicio = new Date(fecha + ' 2026').toISOString().split('T')[0];
+      const meses = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
+      const [dia, mes] = fecha.split(' ');
+      const fechaObj = new Date(2026, meses[mes.toLowerCase()], parseInt(dia));
+      const fechaInicio = fechaObj.toISOString().split('T')[0];
       const { data: prestamo, error: prestamoErr } = await supabase
         .from('prestamos')
         .insert([{
