@@ -128,10 +128,11 @@ function MiniCalendar({ selected, onSelect }) {
       <div className="grid grid-cols-7 gap-1">
         {cells.map((d, i) => {
           if (d === null) return <div key={i} />;
-          const value = `${d} ${monthWord}`;
-          const isSelected = selected === value;
+          const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const displayValue = `${d} ${monthWord}`;
+          const isSelected = selected === isoDate;
           return (
-            <button key={i} onClick={() => onSelect(value)} className="sd-day-cell" style={isSelected ? { background: 'var(--amber)', color: '#15130F', fontWeight: 700 } : {}}>
+            <button key={i} onClick={() => onSelect(isoDate)} className="sd-day-cell" style={isSelected ? { background: 'var(--amber)', color: '#15130F', fontWeight: 700 } : {}}>
               {d}
             </button>
           );
@@ -371,10 +372,7 @@ function NuevoClienteForm({ onSave, onCancel, showError }) {
 
       if (clienteErr) throw clienteErr;
 
-      const meses = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
-      const [dia, mes] = fecha.split(' ');
-      const fechaObj = new Date(2026, meses[mes.toLowerCase()], parseInt(dia));
-      const fechaInicio = fechaObj.toISOString().split('T')[0];
+      const fechaInicio = fecha;
       const { data: prestamo, error: prestamoErr } = await supabase
         .from('prestamos')
         .insert([{
@@ -392,7 +390,8 @@ function NuevoClienteForm({ onSave, onCancel, showError }) {
 
       const cuotasData = [];
       for (let i = 1; i <= Number(cuotas); i++) {
-        const d = new Date(fechaInicio);
+        const [year, month, day] = fechaInicio.split('-').map(Number);
+        const d = new Date(year, month - 1, day);
         const days = INTERVALS[frecuencia] || 7;
         d.setDate(d.getDate() + (i - 1) * days);
         cuotasData.push({
@@ -503,10 +502,7 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const meses = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
-      const [dia, mes] = fecha.split(' ');
-      const fechaObj = new Date(2026, meses[mes.toLowerCase()], parseInt(dia));
-      const fechaInicio = fechaObj.toISOString().split('T')[0];
+      const fechaInicio = fecha;
       const { data: prestamo, error: prestamoErr } = await supabase
         .from('prestamos')
         .insert([{
@@ -524,7 +520,8 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
 
       const cuotasData = [];
       for (let i = 1; i <= Number(cuotas); i++) {
-        const d = new Date(fechaInicio);
+        const [year, month, day] = fechaInicio.split('-').map(Number);
+        const d = new Date(year, month - 1, day);
         const days = INTERVALS[frecuencia] || 7;
         d.setDate(d.getDate() + (i - 1) * days);
         cuotasData.push({
