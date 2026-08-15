@@ -77,15 +77,22 @@ function formatThousands(digits) {
 }
 
 function MoneyInput({ value, onChange, placeholder }) {
+  const inputRef = useRef(null);
   const display = value === '' || value === undefined || value === null ? '' : formatThousands(String(value));
   const handleChange = (e) => {
     const digits = e.target.value.replace(/\D/g, '');
     onChange(digits === '' ? '' : Number(digits));
   };
+  useEffect(() => {
+    if (inputRef.current && inputRef.current.value) {
+      const digits = inputRef.current.value.replace(/\D/g, '');
+      if (digits && !value) onChange(Number(digits));
+    }
+  }, []);
   return (
     <div style={{ position: 'relative' }}>
       <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', fontSize: '0.88rem' }}>$</span>
-      <input className="sd-input sd-mono" style={{ paddingLeft: '26px' }} inputMode="numeric" placeholder={placeholder} value={display} onChange={handleChange} onInput={handleChange} />
+      <input ref={inputRef} className="sd-input sd-mono" style={{ paddingLeft: '26px' }} inputMode="numeric" placeholder={placeholder} value={display} onChange={handleChange} onInput={handleChange} />
     </div>
   );
 }
