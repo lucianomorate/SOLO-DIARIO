@@ -1000,7 +1000,7 @@ export default function SoloDiarioApp() {
                 />
               )}
               {screen === 'nuevoPrestamo' && (
-                <NuevoPrestamoPicker clients={enrichedClientes} onPick={(id) => { setPrestamoTargetId(id); goTo('nuevoPrestamoForm'); }} />
+                <NuevoPrestamoPicker clients={enrichedClients} onPick={(id) => { setPrestamoTargetId(id); goTo('nuevoPrestamoForm'); }} />
               )}
               {screen === 'nuevoPrestamoForm' && prestamoTarget && (
                 <NuevoPrestamoForm
