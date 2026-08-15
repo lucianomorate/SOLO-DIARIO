@@ -341,7 +341,7 @@ function Agregar({ goTo }) {
   );
 }
 
-function NuevoClienteForm({ onSave, onCancel }) {
+function NuevoClienteForm({ onSave, onCancel, showError }) {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [monto, setMonto] = useState('');
@@ -402,7 +402,7 @@ function NuevoClienteForm({ onSave, onCancel }) {
 
       onSave();
     } catch (err) {
-      alert('Error: ' + err.message);
+      if (showError) showError('Error al cargar cliente: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -996,7 +996,8 @@ export default function SoloDiarioApp() {
               {screen === 'nuevoCliente' && (
                 <NuevoClienteForm
                   onCancel={() => goTo('agregar')}
-                  onSave={() => { showToast('Cliente agregado ✓'); loadData(); goTo('dashboard'); }}
+                  onSave={() => { showToast('¡Perfecto! Cliente cargado ✓'); loadData(); goTo('dashboard'); }}
+                  showError={showToast}
                 />
               )}
               {screen === 'nuevoPrestamo' && (
