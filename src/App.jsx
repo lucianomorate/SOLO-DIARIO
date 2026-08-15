@@ -612,7 +612,7 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
       <div className="grid grid-cols-2 gap-3">
         <div className="sd-card" style={{ padding: '14px' }}>
           <div className="sd-stat-label" style={{ marginBottom: '5px' }}>Monto</div>
-          <div className="sd-mono" style={{ fontSize: '1.05rem', fontWeight: 700 }}>{fmt(cuotas.length > 0 ? cuotas[0].monto * cuotas.length : client.monto_prestado || 0)}</div>
+          <div className="sd-mono" style={{ fontSize: '1.05rem', fontWeight: 700 }}>{fmt(cuotas.length > 0 ? client.valor_cuota * cuotas.length : client.monto_prestado || 0)}</div>
         </div>
         <div className="sd-card" style={{ padding: '14px' }}>
           <div className="sd-stat-label" style={{ marginBottom: '5px' }}>Cuotas</div>
