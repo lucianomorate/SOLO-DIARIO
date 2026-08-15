@@ -85,7 +85,7 @@ function MoneyInput({ value, onChange, placeholder }) {
   return (
     <div style={{ position: 'relative' }}>
       <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', fontSize: '0.88rem' }}>$</span>
-      <input className="sd-input sd-mono" style={{ paddingLeft: '26px' }} inputMode="numeric" placeholder={placeholder} value={display} onChange={handleChange} />
+      <input className="sd-input sd-mono" style={{ paddingLeft: '26px' }} inputMode="numeric" placeholder={placeholder} value={display} onChange={handleChange} onInput={handleChange} />
     </div>
   );
 }
