@@ -805,6 +805,7 @@ export default function SoloDiarioApp() {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cuotasPorCliente, setCuotasPorCliente] = useState({});
+  const [prestamoMap, setPrestamoMap] = useState({});
   const pdfSheetRef = useRef(null);
 
   useEffect(() => {
@@ -856,6 +857,7 @@ export default function SoloDiarioApp() {
       });
 
       setClients(enrichedClients);
+      setPrestamoMap(prestamoMap);
       setCuotasPorCliente(grouped);
     } catch (err) {
       alert('Error al cargar datos: ' + err.message);
@@ -972,10 +974,7 @@ export default function SoloDiarioApp() {
   const pdfClient = clients.find((c) => c.id === pdfPreviewId);
   const deleteTarget = clients.find((c) => c.id === deleteTargetId);
 
-  const selectedPrestamo = selected ? Object.keys(cuotasPorCliente).find((pid) => {
-    const cuotas = cuotasPorCliente[pid] || [];
-    return cuotas.length > 0 && cuotas.some((c) => c.prestamo_id);
-  }) : null;
+  const selectedPrestamo = selected ? Object.keys(prestamoMap).find((pid) => prestamoMap[pid].cliente_id === selected.id) : null;
 
   const overdueClients = clients.filter((c) => {
     return Object.values(cuotasPorCliente).flat().some((q) => !q.pagada && new Date(q.fecha_vencimiento) < new Date());
