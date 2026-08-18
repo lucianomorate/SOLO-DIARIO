@@ -1114,11 +1114,10 @@ export default function SoloDiarioApp() {
     const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
     const clientCuotas = Object.values(cuotasPorCliente).flat().filter((q) => clientPrestamos.some((p) => p.id === q.prestamo_id));
 
-    // Mostrar si tiene cuotas vencidas hoy o pagadas hoy, o si tiene múltiples préstamos
-    const cuotasHoy = clientCuotas.filter((q) => q.fecha_vencimiento === today);
-    const pagosHoy = clientCuotas.filter((q) => q.fecha_pago === today);
+    // Mostrar SOLO si tiene cuotas SIN PAGAR que vencen hoy
+    const cuotasVencidasHoy = clientCuotas.filter((q) => q.fecha_vencimiento === today && !q.pagada);
 
-    return cuotasHoy.length > 0 || pagosHoy.length > 0 || clientPrestamos.length > 1;
+    return cuotasVencidasHoy.length > 0;
   });
 
   const stats = (() => {
