@@ -18,7 +18,7 @@ const supabase = createClient(
 
 const fmt = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0);
 const INTERVALS = { Semana: 7, Quincena: 15, Mensual: 30 };
-const backTargets = { agregar: 'dashboard', nuevoCliente: 'agregar', nuevoPrestamo: 'agregar', nuevoPrestamoForm: 'nuevoPrestamo', pago: 'dashboard' };
+const backTargets = { agregar: 'dashboard', nuevoCliente: 'agregar', nuevoPrestamo: 'agregar', nuevoPrestamoForm: 'nuevoPrestamo', prestamos: 'dashboard', pago: 'prestamos', clientesPrestamos: 'dashboard' };
 
 function initials(name) {
   return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
@@ -278,7 +278,78 @@ function TopBar({ screen, goBack, dateLabel }) {
   );
 }
 
-function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, goTo, stats, onOpenAtrasados }) {
+function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, onSelectPrestamo, onBack }) {
+  if (!client) return null;
+  const clientePrestamos = Object.values(prestamoMap || {}).filter((p) => p.cliente_id === client.id);
+
+  return (
+    <div className="max-w-md mx-auto px-4 py-6 md:py-10 flex flex-col gap-5 pb-10">
+      <div className="flex items-center gap-3">
+        <div className="sd-avatar" style={{ width: '52px', height: '52px', fontSize: '1rem' }}>{initials(client.nombre)}</div>
+        <div>
+          <div className="sd-display" style={{ fontSize: '1.05rem', fontWeight: 700 }}>{client.nombre}</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+            <Phone size={12} /> {client.telefono}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 style={{ fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '12px' }}>Préstamos</h2>
+        {clientePrestamos.length === 0 ? (
+          <p style={{ fontSize: '0.84rem', color: 'var(--muted)' }}>Sin préstamos activos</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {clientePrestamos.filter(p => (cuotasPorCliente[p.id] || []).length > 0).map((p) => {
+              const cuotas = cuotasPorCliente[p.id] || [];
+              const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
+              const progreso = cuotas.length > 0 ? Math.round((cuotasPagadas / cuotas.length) * 100) : 0;
+
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => onSelectPrestamo(p.id)}
+                  style={{
+                    padding: '14px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--card-bg)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                  className="hover:bg-opacity-80"
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{fmt(p.monto_prestado)}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{cuotasPagadas}/{cuotas.length} cuotas</div>
+                  </div>
+                  <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        background: progreso === 100 ? '#10b981' : '#f59e0b',
+                        width: `${progreso}%`,
+                        transition: 'width 0.3s'
+                      }}
+                    />
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '6px' }}>{progreso}% completado</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <button className="sd-btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={onBack}>
+        <ChevronLeft size={17} /> Volver
+      </button>
+    </div>
+  );
+}
+
+function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, goToClientePrestamos, goTo, stats, onOpenAtrasados }) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-5 md:px-8 md:py-8 flex flex-col gap-6">
       <div>
@@ -319,7 +390,23 @@ function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, goT
         <h2 style={{ fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>Todos los clientes</h2>
         <div className="flex flex-col gap-2">
           {filtered.map((c) => (
-            <ClientRow key={c.id} client={c} onClick={() => openPago(c.id)} badgeStatus={c.badgeStatus} />
+            <button
+              key={c.id}
+              onClick={() => goToClientePrestamos(c.id)}
+              style={{
+                padding: '12px 14px',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                background: 'var(--card-bg)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s',
+                fontSize: '0.9rem',
+              }}
+              className="hover:bg-opacity-80"
+            >
+              {c.nombre}
+            </button>
           ))}
         </div>
       </div>
@@ -593,6 +680,11 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
   const sectionLabel = { fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' };
   const completed = cuotas.length > 0 && cuotas.every((c) => c.pagada);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
+  console.log('PagoScreen rendered', {
+    total: cuotas.length,
+    pagadas: cuotasPagadas,
+    cuotaDetalles: cuotas.map(c => ({ id: c.id, numero: c.numero, pagada: c.pagada, fecha_pago: c.fecha_pago }))
+  });
 
   return (
     <div className="max-w-md mx-auto px-4 py-6 md:py-10 flex flex-col gap-5 pb-10">
@@ -649,7 +741,13 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
         </div>
       ) : (
         <>
-          <button className="sd-btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={loading} onClick={onConfirm}>
+          <button className="sd-btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={loading} onClick={() => {
+            console.log('=== CLICK REGISTRAR PAGO ===');
+            console.log('onConfirm type:', typeof onConfirm);
+            console.log('loading:', loading);
+            console.log('cuotas:', cuotas.length);
+            onConfirm();
+          }}>
             <CheckCircle size={18} /> {loading ? 'Registrando...' : 'Registrar pago'}
           </button>
         </>
@@ -661,7 +759,7 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
 
       {completed && (
         <button className="sd-btn-danger" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={loading} onClick={onDelete}>
-          <Trash2 size={17} /> {loading ? 'Eliminando...' : 'Eliminar cliente'}
+          <Trash2 size={17} /> {loading ? 'Eliminando...' : 'Eliminar préstamo'}
         </button>
       )}
     </div>
@@ -797,6 +895,7 @@ export default function SoloDiarioApp() {
   const [screen, setScreen] = useState('dashboard');
   const [clients, setClients] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedPrestamoId, setSelectedPrestamoId] = useState(null);
   const [prestamoTargetId, setPrestamoTargetId] = useState(null);
   const [query, setQuery] = useState('');
   const [toast, setToast] = useState('');
@@ -806,9 +905,20 @@ export default function SoloDiarioApp() {
   const [loading, setLoading] = useState(false);
   const [cuotasPorCliente, setCuotasPorCliente] = useState({});
   const [prestamoMap, setPrestamoMap] = useState({});
+  const [prestamos, setPrestamos] = useState([]);
   const pdfSheetRef = useRef(null);
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setLoggedIn(true);
+        loadData();
+      }
+    };
+
+    checkAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, user) => {
       if (user) {
         setLoggedIn(true);
@@ -817,6 +927,7 @@ export default function SoloDiarioApp() {
         setLoggedIn(false);
       }
     });
+
     return () => subscription?.unsubscribe();
   }, []);
 
@@ -859,6 +970,7 @@ export default function SoloDiarioApp() {
       setClients(enrichedClients);
       setPrestamoMap(prestamoMap);
       setCuotasPorCliente(grouped);
+      setPrestamos(prestamosData || []);
     } catch (err) {
       alert('Error al cargar datos: ' + err.message);
     }
@@ -877,7 +989,9 @@ export default function SoloDiarioApp() {
     setTimeout(() => setToast(''), 2400);
   };
 
-  const openPago = (id) => { setSelectedId(id); goTo('pago'); };
+  const openPago = (id) => { setSelectedId(id); setSelectedPrestamoId(null); goTo('prestamos'); };
+  const openPagoFromPrestamo = (prestamoId) => { setSelectedPrestamoId(prestamoId); goTo('pago'); };
+  const goToClientePrestamos = (id) => { setSelectedId(id); goTo('clientesPrestamos'); };
 
   const confirmPago = async (clientId, prestamoId) => {
     setLoading(true);
@@ -886,14 +1000,33 @@ export default function SoloDiarioApp() {
       const unpaidCuota = cuotas.find((c) => !c.pagada);
 
       if (unpaidCuota) {
+        const today = new Date().toISOString().split('T')[0];
         const { error } = await supabase
           .from('cuotas')
-          .update({ pagada: true, fecha_pago: new Date().toISOString().split('T')[0] })
+          .update({ pagada: true, fecha_pago: today })
           .eq('id', unpaidCuota.id);
 
         if (error) throw error;
+
         await loadData();
-        showToast('Pago registrado ✓');
+
+        // Verificar si todas las cuotas están pagadas
+        const allCuotasAhora = cuotas.map((c) => c.id === unpaidCuota.id ? { ...c, pagada: true } : c);
+        const todasPagadas = allCuotasAhora.every((c) => c.pagada);
+
+        if (todasPagadas) {
+          // Eliminar el préstamo
+          const { error: deleteError } = await supabase
+            .from('prestamos')
+            .delete()
+            .eq('id', prestamoId);
+
+          if (deleteError) throw deleteError;
+          await loadData();
+          showToast('Préstamo completado y eliminado ✓');
+        } else {
+          showToast('Pago registrado ✓');
+        }
       }
     } catch (err) {
       alert('Error: ' + err.message);
@@ -922,6 +1055,53 @@ export default function SoloDiarioApp() {
     }
   };
 
+  const deletePrestamo = async (prestamoId) => {
+    console.log('=== DELETE PRESTAMO CALLED ===', prestamoId);
+    setLoading(true);
+    try {
+      if (!prestamoId) {
+        throw new Error('No prestamo ID provided');
+      }
+
+      // First delete all cuotas for this prestamo
+      console.log('Step 1: Deleting cuotas for prestamo', prestamoId);
+      const { error: cuotasError } = await supabase
+        .from('cuotas')
+        .delete()
+        .eq('prestamo_id', prestamoId);
+
+      if (cuotasError) {
+        console.log('Error deleting cuotas:', cuotasError);
+        throw cuotasError;
+      }
+      console.log('Step 1 complete: Cuotas deleted');
+
+      // Then delete the prestamo
+      console.log('Step 2: Deleting prestamo', prestamoId);
+      const { error: prestamoError } = await supabase
+        .from('prestamos')
+        .delete()
+        .eq('id', prestamoId);
+
+      if (prestamoError) {
+        console.log('Error deleting prestamo:', prestamoError);
+        throw prestamoError;
+      }
+      console.log('Step 2 complete: Prestamo deleted');
+
+      console.log('Delete successful, reloading data');
+      await loadData();
+      setDeleteTargetId(null);
+      showToast('Préstamo eliminado ✓');
+      goTo('clientesPrestamos');
+    } catch (err) {
+      console.log('Caught error:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const dateLabel = (() => {
     const s = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -930,8 +1110,15 @@ export default function SoloDiarioApp() {
   const filtered = clients.filter((c) => c.nombre.toLowerCase().includes(query.toLowerCase()));
 
   const dueToday = clients.filter((c) => {
-    const prestamos = clients.map((cl) => ({ id: `${cl.id}-1`, cliente_id: cl.id, ...cl }));
-    return prestamos.some((p) => p.cliente_id === c.id);
+    const today = new Date().toISOString().split('T')[0];
+    const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
+    const clientCuotas = Object.values(cuotasPorCliente).flat().filter((q) => clientPrestamos.some((p) => p.id === q.prestamo_id));
+
+    // Mostrar si tiene cuotas vencidas hoy o pagadas hoy, o si tiene múltiples préstamos
+    const cuotasHoy = clientCuotas.filter((q) => q.fecha_vencimiento === today);
+    const pagosHoy = clientCuotas.filter((q) => q.fecha_pago === today);
+
+    return cuotasHoy.length > 0 || pagosHoy.length > 0 || clientPrestamos.length > 1;
   });
 
   const stats = (() => {
@@ -974,7 +1161,16 @@ export default function SoloDiarioApp() {
   const pdfClient = clients.find((c) => c.id === pdfPreviewId);
   const deleteTarget = clients.find((c) => c.id === deleteTargetId);
 
-  const selectedPrestamo = selected ? Object.keys(prestamoMap).find((pid) => prestamoMap[pid].cliente_id === selected.id) : null;
+  const selectedPrestamo = selectedPrestamoId || (selected ? (() => {
+    const prestamoIds = Object.keys(prestamoMap).filter((pid) => prestamoMap[pid].cliente_id === selected.id);
+    if (prestamoIds.length === 0) return null;
+    const prestamosConCuotas = prestamoIds.filter((pid) => (cuotasPorCliente[pid] || []).length > 0);
+    const result = prestamosConCuotas.length > 0 ? prestamosConCuotas[prestamosConCuotas.length - 1] : prestamoIds[prestamoIds.length - 1];
+    if (screen === 'pago') console.log('selectedPrestamo calculation:', { prestamoIds, prestamosConCuotas, result, cuotas: cuotasPorCliente[result]?.length });
+    return result;
+  })() : null);
+
+  const pdfPrestamo = selectedPrestamo;
 
   const overdueClients = clients.filter((c) => {
     return Object.values(cuotasPorCliente).flat().some((q) => !q.pagada && new Date(q.fecha_vencimiento) < new Date());
@@ -1016,12 +1212,33 @@ export default function SoloDiarioApp() {
                   query={query}
                   setQuery={setQuery}
                   openPago={openPago}
+                  goToClientePrestamos={goToClientePrestamos}
                   goTo={goTo}
                   stats={stats}
                   onOpenAtrasados={() => setShowAtrasados(true)}
                 />
               )}
               {screen === 'agregar' && <Agregar goTo={goTo} />}
+              {screen === 'prestamos' && selected && (
+                <PrestamosCliente
+                  client={selected}
+                  prestamos={prestamos}
+                  prestamoMap={prestamoMap}
+                  cuotasPorCliente={cuotasPorCliente}
+                  onSelectPrestamo={openPagoFromPrestamo}
+                  onBack={() => goTo('dashboard')}
+                />
+              )}
+              {screen === 'clientesPrestamos' && selected && (
+                <PrestamosCliente
+                  client={selected}
+                  prestamos={prestamos}
+                  prestamoMap={prestamoMap}
+                  cuotasPorCliente={cuotasPorCliente}
+                  onSelectPrestamo={openPagoFromPrestamo}
+                  onBack={() => goTo('dashboard')}
+                />
+              )}
               {screen === 'nuevoCliente' && (
                 <NuevoClienteForm
                   onCancel={() => goTo('agregar')}
@@ -1045,7 +1262,7 @@ export default function SoloDiarioApp() {
                   cuotas={selectedPrestamo ? (cuotasPorCliente[selectedPrestamo] || []) : []}
                   onConfirm={() => confirmPago(selected.id, selectedPrestamo)}
                   onDownload={() => setPdfPreviewId(selected.id)}
-                  onDelete={() => setDeleteTargetId(selected.id)}
+                  onDelete={() => deletePrestamo(selectedPrestamo)}
                   loading={loading}
                 />
               )}
@@ -1057,7 +1274,7 @@ export default function SoloDiarioApp() {
       {pdfClient && (
         <PdfPreviewModal
           client={pdfClient}
-          cuotas={Object.values(cuotasPorCliente).flat() || []}
+          cuotas={pdfPrestamo ? (cuotasPorCliente[pdfPrestamo] || []) : []}
           onClose={() => setPdfPreviewId(null)}
           onDownload={() => { descargarPDF(pdfSheetRef, pdfClient.nombre); showToast('PDF descargado ✓'); setPdfPreviewId(null); }}
           pdfSheetRef={pdfSheetRef}
