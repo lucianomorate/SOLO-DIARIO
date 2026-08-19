@@ -790,6 +790,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
   const totalPagado = cuotas.filter((c) => c.pagada).reduce((a, c) => a + c.monto, 0);
   const saldo = cuotas.filter((c) => !c.pagada).reduce((a, c) => a + c.monto, 0);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
+  const cuotasPendientes = cuotas.filter((c) => !c.pagada).length;
   const montoPorCuota = cuotas.length > 0 ? Math.round(client.monto_prestado / cuotas.length) : 0;
 
   const today = new Date();
@@ -832,9 +833,13 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
             ))}
 
             <div className="sd-pdf-summary">
-              <div className="sd-pdf-summary-box" style={{ background: 'rgba(34,31,25,0.07)' }}>
-                <div className="sd-pdf-summary-label" style={{ color: '#4a443a' }}>Cuotas pagas</div>
-                <div className="sd-pdf-summary-value" style={{ color: '#221F19' }}>{cuotasPagadas} de {cuotas.length}</div>
+              <div className="sd-pdf-summary-box" style={{ background: 'rgba(92,214,139,0.22)' }}>
+                <div className="sd-pdf-summary-label" style={{ color: '#1f7a4c' }}>Cuotas pagas</div>
+                <div className="sd-pdf-summary-value" style={{ color: '#1f7a4c' }}>{cuotasPagadas}</div>
+              </div>
+              <div className="sd-pdf-summary-box" style={{ background: 'rgba(245,158,11,0.15)' }}>
+                <div className="sd-pdf-summary-label" style={{ color: '#92400e' }}>Pendientes</div>
+                <div className="sd-pdf-summary-value" style={{ color: '#92400e' }}>{cuotasPendientes}</div>
               </div>
             </div>
           </div>
