@@ -785,13 +785,13 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
   );
 }
 
-function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
+function PdfPreviewModal({ client, prestamo, cuotas, onClose, onDownload, pdfSheetRef }) {
   if (!client) return null;
   const totalPagado = cuotas.filter((c) => c.pagada).reduce((a, c) => a + c.monto, 0);
   const saldo = cuotas.filter((c) => !c.pagada).reduce((a, c) => a + c.monto, 0);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
   const cuotasPendientes = cuotas.filter((c) => !c.pagada).length;
-  const montoPorCuota = cuotas.length > 0 ? Math.round(client.monto_prestado / cuotas.length) : 0;
+  const montoPrestado = prestamo ? prestamo.monto_prestado : client.monto_prestado;
 
   const today = new Date();
   const dateStr = today.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -817,7 +817,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
 
             <div className="sd-pdf-amount-box">
               <div className="sd-pdf-section-label" style={{ marginBottom: '2px' }}>Monto prestado</div>
-              <div className="sd-mono" style={{ fontWeight: 700, fontSize: '1rem' }}>{fmt(client.monto_prestado)}</div>
+              <div className="sd-mono" style={{ fontWeight: 700, fontSize: '1rem' }}>{fmt(montoPrestado)}</div>
             </div>
 
             <div className="sd-pdf-table-head">
@@ -1321,6 +1321,7 @@ export default function SoloDiarioApp() {
       {pdfClient && (
         <PdfPreviewModal
           client={pdfClient}
+          prestamo={pdfPrestamo ? prestamoMap[pdfPrestamo] : null}
           cuotas={pdfPrestamo ? (cuotasPorCliente[pdfPrestamo] || []) : []}
           onClose={() => setPdfPreviewId(null)}
           onDownload={() => { descargarPDF(pdfSheetRef, pdfClient.nombre); showToast('PDF descargado ✓'); setPdfPreviewId(null); }}
