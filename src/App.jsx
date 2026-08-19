@@ -985,7 +985,7 @@ export default function SoloDiarioApp() {
     setTimeout(() => setToast(''), 2400);
   };
 
-  const openPago = (id) => { setSelectedId(id); setSelectedPrestamoId(null); goTo('prestamos'); };
+  const openPago = (id) => { setSelectedId(id); setSelectedPrestamoId(null); goTo('clientesPrestamos'); };
   const openPagoFromPrestamo = (prestamoId) => { setSelectedPrestamoId(prestamoId); goTo('pago'); };
   const goToClientePrestamos = (id) => { setSelectedId(id); goTo('clientesPrestamos'); };
 
