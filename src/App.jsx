@@ -1169,7 +1169,7 @@ export default function SoloDiarioApp() {
     };
   })();
 
-  const selected = clients.find((c) => c.id === selectedId);
+  const selected = clients.find((c) => c.id === selectedId) || (selectedPrestamoId ? clients.find((c) => prestamoMap[selectedPrestamoId]?.cliente_id === c.id) : null);
   const prestamoTarget = clients.find((c) => c.id === prestamoTargetId);
   const pdfClient = clients.find((c) => c.id === pdfPreviewId);
   const deleteTarget = clients.find((c) => c.id === deleteTargetId);
