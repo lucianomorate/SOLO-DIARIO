@@ -18,7 +18,7 @@ const supabase = createClient(
 
 const fmt = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0);
 const INTERVALS = { Semana: 7, Quincena: 15, Mensual: 30 };
-const backTargets = { agregar: 'dashboard', nuevoCliente: 'agregar', nuevoPrestamo: 'agregar', nuevoPrestamoForm: 'nuevoPrestamo', prestamos: 'dashboard', pago: 'prestamos', clientesPrestamos: 'dashboard' };
+const backTargets = { agregar: 'dashboard', nuevoCliente: 'agregar', nuevoPrestamo: 'agregar', nuevoPrestamoForm: 'nuevoPrestamo', prestamos: 'dashboard', pago: 'dashboard', clientesPrestamos: 'dashboard' };
 
 function initials(name) {
   return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
@@ -361,7 +361,7 @@ function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, ope
         ) : (
           <div className="flex flex-col gap-2 mt-3">
             {dueToday.map((c) => (
-              <ClientRow key={c.prestamo_id} client={c} onClick={() => c.prestamo_id ? openPagoFromPrestamo(c.prestamo_id) : openPago(c.id)} badgeStatus={c.badgeStatus} />
+              <ClientRow key={c.prestamo_id} client={c} onClick={() => c.prestamo_id ? openPagoFromPrestamo(c.prestamo_id, c.id) : openPago(c.id)} badgeStatus={c.badgeStatus} />
             ))}
           </div>
         )}
@@ -988,7 +988,7 @@ export default function SoloDiarioApp() {
   };
 
   const openPago = (id) => { setSelectedId(id); setSelectedPrestamoId(null); goTo('clientesPrestamos'); };
-  const openPagoFromPrestamo = (prestamoId) => { setSelectedPrestamoId(prestamoId); goTo('pago'); };
+  const openPagoFromPrestamo = (prestamoId, clienteId) => { setSelectedId(clienteId); setSelectedPrestamoId(prestamoId); goTo('pago'); };
   const goToClientePrestamos = (id) => { setSelectedId(id); goTo('clientesPrestamos'); };
 
   const getToday = () => {
