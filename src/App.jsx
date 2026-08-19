@@ -448,6 +448,12 @@ function NuevoClienteForm({ onSave, onCancel, showError }) {
   const [cuotaMonto, setCuotaMonto] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (Number(monto) > 0 && Number(cuotas) > 0) {
+      setCuotaMonto(Math.round(Number(monto) / Number(cuotas)));
+    }
+  }, [monto, cuotas]);
+
   const canSave = nombre.trim() && telefono.trim() && Number(monto) > 0 && Number(cuotas) > 0 && Number(cuotaMonto) > 0 && fecha;
 
   const handleSave = async () => {
@@ -586,6 +592,13 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
   const [fecha, setFecha] = useState('');
   const [cuotaMonto, setCuotaMonto] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (Number(monto) > 0 && Number(cuotas) > 0) {
+      setCuotaMonto(Math.round(Number(monto) / Number(cuotas)));
+    }
+  }, [monto, cuotas]);
+
   const canSave = Number(monto) > 0 && Number(cuotas) > 0 && Number(cuotaMonto) > 0 && fecha;
 
   const handleSave = async () => {
