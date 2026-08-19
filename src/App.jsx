@@ -790,6 +790,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
   const totalPagado = cuotas.filter((c) => c.pagada).reduce((a, c) => a + c.monto, 0);
   const saldo = cuotas.filter((c) => !c.pagada).reduce((a, c) => a + c.monto, 0);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
+  const montoPorCuota = cuotas.length > 0 ? Math.round(client.monto_prestado / cuotas.length) : 0;
 
   const today = new Date();
   const dateStr = today.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -825,7 +826,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
               <div key={r.id} className="sd-pdf-table-row">
                 <span style={{ color: '#6B6458' }}>{formatShortDate(r.fecha_vencimiento)}</span>
                 <span>Cuota {r.numero}</span>
-                <span>{fmt(r.monto)}</span>
+                <span>{fmt(montoPorCuota)}</span>
                 <span style={{ textAlign: 'right', fontWeight: 600, color: r.pagada ? '#2F8F5B' : '#8A8071' }}>{r.pagada ? 'Pagado' : 'Pendiente'}</span>
               </div>
             ))}
