@@ -839,12 +839,8 @@ function PdfPreviewModal({ client, prestamo, cuotas, onClose, onDownload, pdfShe
 
             <div className="sd-pdf-summary">
               <div className="sd-pdf-summary-box" style={{ background: 'rgba(92,214,139,0.22)' }}>
-                <div className="sd-pdf-summary-label" style={{ color: '#1f7a4c' }}>Cuotas pagas</div>
-                <div className="sd-pdf-summary-value" style={{ color: '#1f7a4c' }}>{cuotasPagadas}</div>
-              </div>
-              <div className="sd-pdf-summary-box" style={{ background: 'rgba(245,158,11,0.15)' }}>
-                <div className="sd-pdf-summary-label" style={{ color: '#92400e' }}>Pendientes</div>
-                <div className="sd-pdf-summary-value" style={{ color: '#92400e' }}>{cuotasPendientes}</div>
+                <div className="sd-pdf-summary-label" style={{ color: '#1f7a4c' }}>Cuotas</div>
+                <div className="sd-pdf-summary-value" style={{ color: '#1f7a4c' }}>{cuotasPagadas}/{cuotas.length}</div>
               </div>
             </div>
           </div>
