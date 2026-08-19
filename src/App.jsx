@@ -25,7 +25,9 @@ function initials(name) {
 }
 
 function formatShortDate(date) {
-  const d = new Date(date);
+  // date is in YYYY-MM-DD format, parse it locally without UTC conversion
+  const [year, month, day] = date.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).replace('.', '');
 }
 
