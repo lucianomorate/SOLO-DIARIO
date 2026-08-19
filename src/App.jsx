@@ -989,6 +989,13 @@ export default function SoloDiarioApp() {
   const openPagoFromPrestamo = (prestamoId) => { setSelectedPrestamoId(prestamoId); goTo('pago'); };
   const goToClientePrestamos = (id) => { setSelectedId(id); goTo('clientesPrestamos'); };
 
+  const getToday = () => {
+    const now = new Date();
+    return now.getFullYear() + '-' +
+           String(now.getMonth() + 1).padStart(2, '0') + '-' +
+           String(now.getDate()).padStart(2, '0');
+  };
+
   const confirmPago = async (clientId, prestamoId) => {
     setLoading(true);
     try {
@@ -996,7 +1003,7 @@ export default function SoloDiarioApp() {
       const unpaidCuota = cuotas.find((c) => !c.pagada);
 
       if (unpaidCuota) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getToday();
         const { error } = await supabase
           .from('cuotas')
           .update({ pagada: true, fecha_pago: today })
@@ -1106,7 +1113,7 @@ export default function SoloDiarioApp() {
   const filtered = clients.filter((c) => c.nombre.toLowerCase().includes(query.toLowerCase()));
 
   const dueToday = clients.filter((c) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getToday();
     const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
     const clientCuotas = Object.values(cuotasPorCliente).flat().filter((q) => clientPrestamos.some((p) => p.id === q.prestamo_id));
 
@@ -1130,8 +1137,7 @@ export default function SoloDiarioApp() {
       totalAmount += maxMonto * cantCuotas;
     });
 
-    const pagosHoy = new Date();
-    const pagosHoyCount = allCuotas.filter((c) => c.fecha_pago === pagosHoy.toISOString().split('T')[0]).length;
+    const pagosHoyCount = allCuotas.filter((c) => c.fecha_pago === getToday()).length;
 
     const atrasados = clients.filter((c) => {
       const cuotas = Object.values(cuotasPorCliente).flat().filter((q) => q.prestamo_id);
