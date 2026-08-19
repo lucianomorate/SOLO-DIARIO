@@ -676,7 +676,7 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
 
 function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }) {
   if (!client) return null;
-  const historial = cuotas.filter((c) => c.pagada).sort((a, b) => new Date(b.fecha_pago) - new Date(a.fecha_pago));
+  const historial = cuotas.filter((c) => c.pagada).sort((a, b) => a.numero - b.numero);
   const sectionLabel = { fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' };
   const completed = cuotas.length > 0 && cuotas.every((c) => c.pagada);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
@@ -802,7 +802,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
             <div className="sd-pdf-table-head">
               <span>Fecha</span><span>Cuota</span><span>Monto</span><span style={{ textAlign: 'right' }}>Estado</span>
             </div>
-            {cuotas.map((r) => (
+            {cuotas.sort((a, b) => a.numero - b.numero).map((r) => (
               <div key={r.id} className="sd-pdf-table-row">
                 <span style={{ color: '#6B6458' }}>{formatShortDate(r.fecha_vencimiento)}</span>
                 <span>Cuota {r.numero}</span>
