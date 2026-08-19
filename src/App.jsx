@@ -789,6 +789,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
   if (!client) return null;
   const totalPagado = cuotas.filter((c) => c.pagada).reduce((a, c) => a + c.monto, 0);
   const saldo = cuotas.filter((c) => !c.pagada).reduce((a, c) => a + c.monto, 0);
+  const montoTotal = cuotas.reduce((a, c) => a + c.monto, 0);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
 
   const today = new Date();
@@ -815,7 +816,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
 
             <div className="sd-pdf-amount-box">
               <div className="sd-pdf-section-label" style={{ marginBottom: '2px' }}>Monto</div>
-              <div className="sd-mono" style={{ fontWeight: 700, fontSize: '1rem' }}>{fmt(client.monto_prestado)}</div>
+              <div className="sd-mono" style={{ fontWeight: 700, fontSize: '1rem' }}>{fmt(montoTotal)}</div>
             </div>
 
             <div className="sd-pdf-table-head">
