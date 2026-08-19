@@ -831,7 +831,7 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
                 <div key={r.id} className="sd-pdf-table-row">
                   <span style={{ color: '#6B6458' }}>{formatShortDate(r.fecha_vencimiento)}</span>
                   <span>Cuota {r.numero}</span>
-                  <span>{fmt(montoPorCuota)}</span>
+                  <span>{fmt(r.monto)}</span>
                   <span style={{ textAlign: 'right', fontWeight: 600, color: statusColor }}>{statusText}</span>
                 </div>
               );
