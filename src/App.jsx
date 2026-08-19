@@ -832,10 +832,6 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
             ))}
 
             <div className="sd-pdf-summary">
-              <div className="sd-pdf-summary-box" style={{ background: 'rgba(92,214,139,0.22)' }}>
-                <div className="sd-pdf-summary-label" style={{ color: '#1f7a4c' }}>Pagado</div>
-                <div className="sd-pdf-summary-value" style={{ color: '#1f7a4c' }}>{fmt(totalPagado)}</div>
-              </div>
               <div className="sd-pdf-summary-box" style={{ background: 'rgba(34,31,25,0.07)' }}>
                 <div className="sd-pdf-summary-label" style={{ color: '#4a443a' }}>Cuotas pagas</div>
                 <div className="sd-pdf-summary-value" style={{ color: '#221F19' }}>{cuotasPagadas} de {cuotas.length}</div>
