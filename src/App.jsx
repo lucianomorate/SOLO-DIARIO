@@ -1181,12 +1181,9 @@ export default function SoloDiarioApp() {
 
   const enriquecerClientes = (clientList) => {
     return clientList.map((c) => {
-      const prestamoIds = Object.keys(cuotasPorCliente).filter((pid) => {
-        const cuotas = cuotasPorCliente[pid] || [];
-        return cuotas.some((cu) => cu.prestamo_id && cuotas.length > 0) || Object.values(cuotasPorCliente).flat().some((q) => q.prestamo_id);
-      });
-      const clientCuotas = prestamoIds.length > 0 ? cuotasPorCliente[prestamoIds[0]] || [] : [];
-      const completed = clientCuotas.length > 0 && clientCuotas.every((cu) => cu.pagada);
+      const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
+      const allClientCuotas = clientPrestamos.flatMap((p) => cuotasPorCliente[p.id] || []);
+      const completed = allClientCuotas.length > 0 && allClientCuotas.every((cu) => cu.pagada);
       let badge = { cls: 'pending', text: 'Pendiente' };
       if (completed) badge = { cls: 'paid', text: 'Completado' };
       return { ...c, badgeStatus: badge, streak: [null, null, null, null, null, null, null] };
@@ -1194,7 +1191,18 @@ export default function SoloDiarioApp() {
   };
 
   const enrichedClients = enriquecerClientes(clients);
-  const enrichedDueToday = enriquecerClientes(dueToday);
+  const enrichedDueToday = dueToday.map((c) => {
+    const today = getToday();
+    const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
+    const clientCuotas = clientPrestamos.flatMap((p) => cuotasPorCliente[p.id] || []);
+    const cuotasVencidasHoy = clientCuotas.filter((q) => q.fecha_vencimiento === today && !q.pagada);
+    const totalCuotasHoy = cuotasVencidasHoy.reduce((sum, q) => sum + parseFloat(q.monto || 0), 0);
+    const allClientCuotas = clientCuotas;
+    const completed = allClientCuotas.length > 0 && allClientCuotas.every((cu) => cu.pagada);
+    let badge = { cls: 'pending', text: 'Pendiente' };
+    if (completed) badge = { cls: 'paid', text: 'Completado' };
+    return { ...c, valor_cuota: totalCuotasHoy, badgeStatus: badge, streak: [null, null, null, null, null, null, null] };
+  });
   const enrichedOverdue = enriquecerClientes(overdueClients);
 
   return (
