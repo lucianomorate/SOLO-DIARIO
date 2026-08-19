@@ -351,7 +351,7 @@ function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, on
   );
 }
 
-function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, goToClientePrestamos, goTo, stats, onOpenAtrasados }) {
+function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, openPagoFromPrestamo, goToClientePrestamos, goTo, stats, onOpenAtrasados }) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-5 md:px-8 md:py-8 flex flex-col gap-6">
       <div>
@@ -361,7 +361,7 @@ function Dashboard({ clients, dueToday, filtered, query, setQuery, openPago, goT
         ) : (
           <div className="flex flex-col gap-2 mt-3">
             {dueToday.map((c) => (
-              <ClientRow key={c.id} client={c} onClick={() => openPago(c.id)} badgeStatus={c.badgeStatus} />
+              <ClientRow key={c.prestamo_id} client={c} onClick={() => c.prestamo_id ? openPagoFromPrestamo(c.prestamo_id) : openPago(c.id)} badgeStatus={c.badgeStatus} />
             ))}
           </div>
         )}
@@ -1114,15 +1114,25 @@ export default function SoloDiarioApp() {
 
   const filtered = clients.filter((c) => c.nombre.toLowerCase().includes(query.toLowerCase()));
 
-  const dueToday = clients.filter((c) => {
+  const dueToday = [];
+  clients.forEach((c) => {
     const today = getToday();
     const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
-    const clientCuotas = Object.values(cuotasPorCliente).flat().filter((q) => clientPrestamos.some((p) => p.id === q.prestamo_id));
 
-    // Mostrar SOLO si tiene cuotas SIN PAGAR que vencen hoy
-    const cuotasVencidasHoy = clientCuotas.filter((q) => q.fecha_vencimiento === today && !q.pagada);
+    clientPrestamos.forEach((prestamo) => {
+      const prestamosCuotas = cuotasPorCliente[prestamo.id] || [];
+      const cuotasVencidasHoy = prestamosCuotas.filter((q) => q.fecha_vencimiento === today && !q.pagada);
 
-    return cuotasVencidasHoy.length > 0;
+      if (cuotasVencidasHoy.length > 0) {
+        const totalCuotasHoy = cuotasVencidasHoy.reduce((sum, q) => sum + parseFloat(q.monto || 0), 0);
+        dueToday.push({
+          clienteId: c.id,
+          cliente: c,
+          prestamo: prestamo,
+          totalCuotasHoy: totalCuotasHoy
+        });
+      }
+    });
   });
 
   const stats = (() => {
@@ -1191,17 +1201,18 @@ export default function SoloDiarioApp() {
   };
 
   const enrichedClients = enriquecerClientes(clients);
-  const enrichedDueToday = dueToday.map((c) => {
-    const today = getToday();
-    const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
-    const clientCuotas = clientPrestamos.flatMap((p) => cuotasPorCliente[p.id] || []);
-    const cuotasVencidasHoy = clientCuotas.filter((q) => q.fecha_vencimiento === today && !q.pagada);
-    const totalCuotasHoy = cuotasVencidasHoy.reduce((sum, q) => sum + parseFloat(q.monto || 0), 0);
-    const allClientCuotas = clientCuotas;
-    const completed = allClientCuotas.length > 0 && allClientCuotas.every((cu) => cu.pagada);
+  const enrichedDueToday = dueToday.map((item) => {
+    const allPrestamosCuotas = cuotasPorCliente[item.prestamo.id] || [];
+    const completed = allPrestamosCuotas.length > 0 && allPrestamosCuotas.every((cu) => cu.pagada);
     let badge = { cls: 'pending', text: 'Pendiente' };
     if (completed) badge = { cls: 'paid', text: 'Completado' };
-    return { ...c, valor_cuota: totalCuotasHoy, badgeStatus: badge, streak: [null, null, null, null, null, null, null] };
+    return {
+      ...item.cliente,
+      valor_cuota: item.totalCuotasHoy,
+      badgeStatus: badge,
+      streak: [null, null, null, null, null, null, null],
+      prestamo_id: item.prestamo.id
+    };
   });
   const enrichedOverdue = enriquecerClientes(overdueClients);
 
@@ -1223,6 +1234,7 @@ export default function SoloDiarioApp() {
                   query={query}
                   setQuery={setQuery}
                   openPago={openPago}
+                  openPagoFromPrestamo={openPagoFromPrestamo}
                   goToClientePrestamos={goToClientePrestamos}
                   goTo={goTo}
                   stats={stats}
