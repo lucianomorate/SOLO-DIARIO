@@ -306,6 +306,8 @@ function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, on
               const cuotas = cuotasPorCliente[p.id] || [];
               const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
               const progreso = cuotas.length > 0 ? Math.round((cuotasPagadas / cuotas.length) * 100) : 0;
+              const nextCuota = cuotas.find((c) => !c.pagada);
+              const cuotaPendiente = nextCuota ? nextCuota.monto : 0;
 
               return (
                 <button
@@ -323,7 +325,7 @@ function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, on
                   className="hover:bg-opacity-80"
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{fmt(p.monto_prestado)}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{fmt(cuotaPendiente)}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{cuotasPagadas}/{cuotas.length} cuotas</div>
                   </div>
                   <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
