@@ -823,14 +823,19 @@ function PdfPreviewModal({ client, cuotas, onClose, onDownload, pdfSheetRef }) {
             <div className="sd-pdf-table-head">
               <span>Fecha</span><span>Cuota</span><span>Monto</span><span style={{ textAlign: 'right' }}>Estado</span>
             </div>
-            {cuotas.sort((a, b) => a.numero - b.numero).map((r) => (
-              <div key={r.id} className="sd-pdf-table-row">
-                <span style={{ color: '#6B6458' }}>{formatShortDate(r.fecha_vencimiento)}</span>
-                <span>Cuota {r.numero}</span>
-                <span>{fmt(montoPorCuota)}</span>
-                <span style={{ textAlign: 'right', fontWeight: 600, color: r.pagada ? '#2F8F5B' : '#8A8071' }}>{r.pagada ? 'Pagado' : 'Pendiente'}</span>
-              </div>
-            ))}
+            {cuotas.sort((a, b) => a.numero - b.numero).map((r) => {
+              const isOverdue = !r.pagada && new Date(r.fecha_vencimiento) < new Date();
+              const statusColor = r.pagada ? '#2F8F5B' : isOverdue ? '#dc2626' : '#8A8071';
+              const statusText = r.pagada ? 'Pagado' : isOverdue ? 'ATRASADO' : 'Pendiente';
+              return (
+                <div key={r.id} className="sd-pdf-table-row">
+                  <span style={{ color: '#6B6458' }}>{formatShortDate(r.fecha_vencimiento)}</span>
+                  <span>Cuota {r.numero}</span>
+                  <span>{fmt(montoPorCuota)}</span>
+                  <span style={{ textAlign: 'right', fontWeight: 600, color: statusColor }}>{statusText}</span>
+                </div>
+              );
+            })}
 
             <div className="sd-pdf-summary">
               <div className="sd-pdf-summary-box" style={{ background: 'rgba(92,214,139,0.22)' }}>
