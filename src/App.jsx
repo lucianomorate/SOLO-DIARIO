@@ -695,6 +695,8 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
   const sectionLabel = { fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' };
   const completed = cuotas.length > 0 && cuotas.every((c) => c.pagada);
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
+  const nextCuota = cuotas.find((c) => !c.pagada);
+  const cuotaMonto = nextCuota ? nextCuota.monto : 0;
   console.log('PagoScreen rendered', {
     total: cuotas.length,
     pagadas: cuotasPagadas,
@@ -715,8 +717,8 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
 
       <div className="grid grid-cols-2 gap-3">
         <div className="sd-card" style={{ padding: '14px' }}>
-          <div className="sd-stat-label" style={{ marginBottom: '5px' }}>Monto</div>
-          <div className="sd-mono" style={{ fontSize: '1.05rem', fontWeight: 700 }}>{fmt(client.monto_prestado || 0)}</div>
+          <div className="sd-stat-label" style={{ marginBottom: '5px' }}>Cuota pendiente</div>
+          <div className="sd-mono" style={{ fontSize: '1.05rem', fontWeight: 700 }}>{fmt(cuotaMonto)}</div>
         </div>
         <div className="sd-card" style={{ padding: '14px' }}>
           <div className="sd-stat-label" style={{ marginBottom: '5px' }}>Cuotas</div>
