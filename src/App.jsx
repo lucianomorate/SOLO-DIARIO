@@ -931,6 +931,7 @@ export default function SoloDiarioApp() {
   const [pdfPreviewId, setPdfPreviewId] = useState(null);
   const [showAtrasados, setShowAtrasados] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [editingPrestamoId, setEditingPrestamoId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cuotasPorCliente, setCuotasPorCliente] = useState({});
   const [prestamoMap, setPrestamoMap] = useState({});
