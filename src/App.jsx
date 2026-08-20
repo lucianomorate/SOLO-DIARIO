@@ -20,6 +20,22 @@ const fmt = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency:
 const INTERVALS = { Día: 1, Semana: 7, Quincena: 15, Mensual: 30 };
 const backTargets = { agregar: 'dashboard', nuevoCliente: 'agregar', nuevoPrestamo: 'agregar', nuevoPrestamoForm: 'nuevoPrestamo', prestamos: 'dashboard', pago: 'dashboard', clientesPrestamos: 'dashboard' };
 
+function calcularSiguienteFecha(fecha, frecuencia) {
+  const [year, month, day] = fecha.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  const days = INTERVALS[frecuencia] || 7;
+  d.setDate(d.getDate() + days);
+
+  // Si es frecuencia "Día", saltar fines de semana (sábado=6, domingo=0)
+  if (frecuencia === 'Día') {
+    while (d.getDay() === 0 || d.getDay() === 6) {
+      d.setDate(d.getDate() + 1);
+    }
+  }
+
+  return d.toISOString().split('T')[0];
+}
+
 function initials(name) {
   return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
 }
@@ -493,18 +509,16 @@ function NuevoClienteForm({ onSave, onCancel, showError }) {
       if (prestamoErr) throw prestamoErr;
 
       const cuotasData = [];
+      let fechaActual = fechaInicio;
       for (let i = 1; i <= Number(cuotas); i++) {
-        const [year, month, day] = fechaInicio.split('-').map(Number);
-        const d = new Date(year, month - 1, day);
-        const days = INTERVALS[frecuencia] || 7;
-        d.setDate(d.getDate() + (i - 1) * days);
         cuotasData.push({
           prestamo_id: prestamo.id,
           numero: i,
-          fecha_vencimiento: d.toISOString().split('T')[0],
+          fecha_vencimiento: fechaActual,
           monto: Number(cuotaMonto),
           pagada: false,
         });
+        fechaActual = calcularSiguienteFecha(fechaActual, frecuencia);
       }
 
       const { error: cuotasErr } = await supabase
@@ -630,18 +644,16 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
       if (prestamoErr) throw prestamoErr;
 
       const cuotasData = [];
+      let fechaActual = fechaInicio;
       for (let i = 1; i <= Number(cuotas); i++) {
-        const [year, month, day] = fechaInicio.split('-').map(Number);
-        const d = new Date(year, month - 1, day);
-        const days = INTERVALS[frecuencia] || 7;
-        d.setDate(d.getDate() + (i - 1) * days);
         cuotasData.push({
           prestamo_id: prestamo.id,
           numero: i,
-          fecha_vencimiento: d.toISOString().split('T')[0],
+          fecha_vencimiento: fechaActual,
           monto: Number(cuotaMonto),
           pagada: false,
         });
+        fechaActual = calcularSiguienteFecha(fechaActual, frecuencia);
       }
 
       const { error: cuotasErr } = await supabase
@@ -698,7 +710,7 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
   );
 }
 
-function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify, loading }) {
+function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify, loading, prestamo }) {
   if (!client) return null;
   const historial = cuotas.filter((c) => c.pagada).sort((a, b) => a.numero - b.numero);
   const sectionLabel = { fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' };
@@ -706,6 +718,7 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify,
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
   const nextCuota = cuotas.find((c) => !c.pagada);
   const cuotaMonto = nextCuota ? nextCuota.monto : 0;
+  const canModify = cuotasPagadas === 0;
   console.log('PagoScreen rendered', {
     total: cuotas.length,
     pagadas: cuotasPagadas,
@@ -783,9 +796,30 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify,
         <FileText size={17} /> Exportar PDF
       </button>
 
-      <button className="sd-btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(245,158,11,0.2)', color: 'var(--amber)', border: '1px solid var(--amber)' }} onClick={onModify}>
+      <button
+        className="sd-btn-primary"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          background: canModify ? 'rgba(245,158,11,0.2)' : 'rgba(0,0,0,0.1)',
+          color: canModify ? 'var(--amber)' : 'var(--muted)',
+          border: canModify ? '1px solid var(--amber)' : '1px solid var(--border)',
+          cursor: canModify ? 'pointer' : 'not-allowed',
+          opacity: canModify ? 1 : 0.6
+        }}
+        onClick={onModify}
+        disabled={!canModify}
+      >
         <FileText size={17} /> Modificar préstamo
       </button>
+      {!canModify && (
+        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textAlign: 'center' }}>
+          Solo se puede modificar cuando no hay pagos registrados
+        </div>
+      )}
 
       {completed && (
         <button className="sd-btn-danger" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={loading} onClick={onDelete}>
@@ -889,6 +923,103 @@ function OverdueModal({ clients, onClose, onSelect }) {
   );
 }
 
+function EditarPrestamoModal({ prestamo, client, cuotas, onCancel, onConfirm, loading }) {
+  if (!prestamo || !client) return null;
+  const [monto, setMonto] = useState(prestamo.monto_prestado);
+  const [cantidadCuotas, setCantidadCuotas] = useState(prestamo.cantidad_cuotas);
+  const [frecuencia, setFrecuencia] = useState(prestamo.frecuencia);
+  const [valorCuota, setValorCuota] = useState(prestamo.valor_cuota);
+  const [fechaInicio, setFechaInicio] = useState(prestamo.fecha_inicio);
+  const [autoCalcular, setAutoCalcular] = useState(false);
+
+  const montoSinInteres = Math.round(Number(monto) / Number(cantidadCuotas));
+
+  const hasChanges = monto !== prestamo.monto_prestado ||
+                     cantidadCuotas !== prestamo.cantidad_cuotas ||
+                     frecuencia !== prestamo.frecuencia ||
+                     valorCuota !== prestamo.valor_cuota ||
+                     fechaInicio !== prestamo.fecha_inicio;
+
+  return (
+    <div className="sd-modal-overlay" onClick={onCancel}>
+      <div className="sd-modal" style={{ maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+        <div className="sd-modal-header">
+          <div className="flex items-center gap-2">
+            <FileText size={16} style={{ color: 'var(--amber)' }} />
+            <span className="sd-display" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Modificar préstamo</span>
+          </div>
+          <button className="sd-icon-btn" style={{ width: '30px', height: '30px' }} onClick={onCancel}><X size={15} /></button>
+        </div>
+        <div className="sd-modal-body">
+          <div className="flex items-center gap-3" style={{ marginBottom: '14px' }}>
+            <div className="sd-avatar">{initials(client.nombre)}</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{client.nombre}</div>
+          </div>
+
+          <div style={{ marginBottom: '14px' }}>
+            <span className="sd-label">Monto del préstamo</span>
+            <MoneyInput value={monto} onChange={setMonto} placeholder="0" />
+          </div>
+
+          <div style={{ marginBottom: '14px' }}>
+            <span className="sd-label">Cantidad de cuotas</span>
+            <input className="sd-input" type="number" placeholder="Cantidad de cuotas" value={cantidadCuotas} onChange={(e) => setCantidadCuotas(Number(e.target.value))} />
+          </div>
+
+          <div style={{ marginBottom: '14px' }}>
+            <span className="sd-label">Frecuencia de pago</span>
+            <Segmented options={['Día', 'Semana', 'Quincena', 'Mensual']} value={frecuencia} onChange={setFrecuencia} />
+          </div>
+
+          <div style={{ marginBottom: '14px' }}>
+            <span className="sd-label">Monto por cuota</span>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+              <MoneyInput value={valorCuota} onChange={setValorCuota} placeholder="0" />
+              <button
+                className="sd-btn-outline"
+                style={{ padding: '8px 12px', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                onClick={() => {
+                  setAutoCalcular(!autoCalcular);
+                  if (!autoCalcular) {
+                    setValorCuota(montoSinInteres);
+                  }
+                }}
+              >
+                {autoCalcular ? '🔒' : '📐'}
+              </button>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>
+              {Number(monto) > 0 && Number(cantidadCuotas) > 0 && (
+                <>
+                  <div>Sin interés: {fmt(montoSinInteres)} por cuota</div>
+                  <div>Con interés: {fmt(valorCuota)} por cuota (diferencia: {fmt(valorCuota - montoSinInteres)})</div>
+                  <div>Total con interés: {fmt(Number(valorCuota) * Number(cantidadCuotas))}</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <span className="sd-label">Fecha de inicio del pago</span>
+            <MiniCalendar selected={fechaInicio} onSelect={setFechaInicio} />
+          </div>
+        </div>
+        <div className="sd-modal-actions">
+          <button className="sd-btn-outline" style={{ flex: 1 }} onClick={onCancel} disabled={loading}>Cancelar</button>
+          <button
+            className="sd-btn-primary"
+            style={{ flex: 1 }}
+            disabled={!hasChanges || loading || Number(monto) <= 0 || Number(cantidadCuotas) <= 0 || Number(valorCuota) <= 0}
+            onClick={() => onConfirm({ monto, cantidadCuotas, frecuencia, valorCuota, fechaInicio })}
+          >
+            {loading ? 'Guardando...' : 'Guardar cambios'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DeleteConfirmModal({ client, onCancel, onConfirm, loading }) {
   if (!client) return null;
   return (
@@ -932,6 +1063,7 @@ export default function SoloDiarioApp() {
   const [showAtrasados, setShowAtrasados] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [editingPrestamoId, setEditingPrestamoId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cuotasPorCliente, setCuotasPorCliente] = useState({});
   const [prestamoMap, setPrestamoMap] = useState({});
@@ -1159,6 +1291,65 @@ export default function SoloDiarioApp() {
     }
   };
 
+  const modificarPrestamo = async (prestamoId, cambios) => {
+    setLoading(true);
+    try {
+      const prestamo = prestamoMap[prestamoId];
+      if (!prestamo) throw new Error('Préstamo no encontrado');
+
+      // Update the prestamo record
+      const { error: updateError } = await supabase
+        .from('prestamos')
+        .update({
+          monto_prestado: Number(cambios.monto),
+          cantidad_cuotas: Number(cambios.cantidadCuotas),
+          valor_cuota: Number(cambios.valorCuota),
+          frecuencia: cambios.frecuencia,
+          fecha_inicio: cambios.fechaInicio,
+        })
+        .eq('id', prestamoId);
+
+      if (updateError) throw updateError;
+
+      // Delete existing unpaid cuotas
+      const { error: deleteError } = await supabase
+        .from('cuotas')
+        .delete()
+        .eq('prestamo_id', prestamoId)
+        .eq('pagada', false);
+
+      if (deleteError) throw deleteError;
+
+      // Generate new cuotas using the new start date
+      const cuotasData = [];
+      let fechaActual = cambios.fechaInicio;
+      for (let i = 1; i <= Number(cambios.cantidadCuotas); i++) {
+        cuotasData.push({
+          prestamo_id: prestamoId,
+          numero: i,
+          fecha_vencimiento: fechaActual,
+          monto: Number(cambios.valorCuota),
+          pagada: false,
+        });
+        fechaActual = calcularSiguienteFecha(fechaActual, cambios.frecuencia);
+      }
+
+      const { error: insertError } = await supabase
+        .from('cuotas')
+        .insert(cuotasData);
+
+      if (insertError) throw insertError;
+
+      await loadData();
+      setShowEditModal(false);
+      showToast('Préstamo modificado ✓');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const dateLabel = (() => {
     const s = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -1337,10 +1528,12 @@ export default function SoloDiarioApp() {
               {screen === 'pago' && selected && (
                 <PagoScreen
                   client={selected}
+                  prestamo={selectedPrestamo ? prestamoMap[selectedPrestamo] : null}
                   cuotas={selectedPrestamo ? (cuotasPorCliente[selectedPrestamo] || []) : []}
                   onConfirm={() => confirmPago(selected.id, selectedPrestamo)}
                   onDownload={() => setPdfPreviewId(selected.id)}
                   onDelete={() => deletePrestamo(selectedPrestamo)}
+                  onModify={() => { setEditingPrestamoId(selectedPrestamo); setShowEditModal(true); }}
                   loading={loading}
                 />
               )}
@@ -1371,6 +1564,16 @@ export default function SoloDiarioApp() {
           client={deleteTarget}
           onCancel={() => setDeleteTargetId(null)}
           onConfirm={() => deleteClient(deleteTarget.id)}
+          loading={loading}
+        />
+      )}
+      {showEditModal && editingPrestamoId && (
+        <EditarPrestamoModal
+          prestamo={prestamoMap[editingPrestamoId]}
+          client={selected}
+          cuotas={cuotasPorCliente[editingPrestamoId] || []}
+          onCancel={() => setShowEditModal(false)}
+          onConfirm={(cambios) => modificarPrestamo(editingPrestamoId, cambios)}
           loading={loading}
         />
       )}
