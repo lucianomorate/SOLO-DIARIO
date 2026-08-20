@@ -718,7 +718,6 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify,
   const cuotasPagadas = cuotas.filter((c) => c.pagada).length;
   const nextCuota = cuotas.find((c) => !c.pagada);
   const cuotaMonto = nextCuota ? nextCuota.monto : 0;
-  const canModify = cuotasPagadas === 0;
   console.log('PagoScreen rendered', {
     total: cuotas.length,
     pagadas: cuotasPagadas,
@@ -825,20 +824,17 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify,
           alignItems: 'center',
           justifyContent: 'center',
           gap: '8px',
-          background: canModify ? 'rgba(245,158,11,0.2)' : 'rgba(0,0,0,0.1)',
-          color: canModify ? 'var(--amber)' : 'var(--muted)',
-          border: canModify ? '1px solid var(--amber)' : '1px solid var(--border)',
-          cursor: canModify ? 'pointer' : 'not-allowed',
-          opacity: canModify ? 1 : 0.6
+          background: 'rgba(245,158,11,0.2)',
+          color: 'var(--amber)',
+          border: '1px solid var(--amber)'
         }}
         onClick={onModify}
-        disabled={!canModify}
       >
         <FileText size={17} /> Modificar préstamo
       </button>
-      {!canModify && (
-        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textAlign: 'center' }}>
-          Solo se puede modificar cuando no hay pagos registrados
+      {cuotasPagadas > 0 && (
+        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textAlign: 'center', background: 'rgba(245,179,1,0.05)', padding: '8px', borderRadius: '6px' }}>
+          ℹ️ Los {cuotasPagadas} pago(s) registrado(s) se conservarán. Solo se ajustarán los pagos pendientes.
         </div>
       )}
 
@@ -1356,6 +1352,15 @@ export default function SoloDiarioApp() {
       const prestamo = prestamoMap[prestamoId];
       if (!prestamo) throw new Error('Préstamo no encontrado');
 
+      // Get all current cuotas for this prestamo
+      const { data: cuotasActuales, error: cuotasError } = await supabase
+        .from('cuotas')
+        .select('*')
+        .eq('prestamo_id', prestamoId)
+        .order('numero', { ascending: true });
+
+      if (cuotasError) throw cuotasError;
+
       // Update the prestamo record
       const { error: updateError } = await supabase
         .from('prestamos')
@@ -1370,6 +1375,9 @@ export default function SoloDiarioApp() {
 
       if (updateError) throw updateError;
 
+      // Find the last paid cuota
+      const ultimaCuotaPagada = cuotasActuales.filter((c) => c.pagada).sort((a, b) => b.numero - a.numero)[0];
+
       // Delete existing unpaid cuotas
       const { error: deleteError } = await supabase
         .from('cuotas')
@@ -1379,10 +1387,21 @@ export default function SoloDiarioApp() {
 
       if (deleteError) throw deleteError;
 
-      // Generate new cuotas using the new start date
+      // Calculate the starting number for new cuotas
+      const ultimoNumeroPagado = ultimaCuotaPagada ? ultimaCuotaPagada.numero : 0;
+      const nuevasCuotasNeeded = Number(cambios.cantidadCuotas) - ultimoNumeroPagado;
+
+      // Calculate the starting date for new cuotas
+      let fechaInicioNuevasCuotas = cambios.fechaInicio;
+      if (ultimaCuotaPagada) {
+        // Start from the next date after the last paid cuota
+        fechaInicioNuevasCuotas = calcularSiguienteFecha(ultimaCuotaPagada.fecha_vencimiento, cambios.frecuencia);
+      }
+
+      // Generate new unpaid cuotas
       const cuotasData = [];
-      let fechaActual = cambios.fechaInicio;
-      for (let i = 1; i <= Number(cambios.cantidadCuotas); i++) {
+      let fechaActual = fechaInicioNuevasCuotas;
+      for (let i = ultimoNumeroPagado + 1; i <= Number(cambios.cantidadCuotas); i++) {
         cuotasData.push({
           prestamo_id: prestamoId,
           numero: i,
@@ -1393,11 +1412,13 @@ export default function SoloDiarioApp() {
         fechaActual = calcularSiguienteFecha(fechaActual, cambios.frecuencia);
       }
 
-      const { error: insertError } = await supabase
-        .from('cuotas')
-        .insert(cuotasData);
+      if (cuotasData.length > 0) {
+        const { error: insertError } = await supabase
+          .from('cuotas')
+          .insert(cuotasData);
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
+      }
 
       await loadData();
       setShowEditModal(false);
