@@ -710,7 +710,7 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
   );
 }
 
-function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify, loading, prestamo }) {
+function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify, onUndoPayment, loading, prestamo }) {
   if (!client) return null;
   const historial = cuotas.filter((c) => c.pagada).sort((a, b) => a.numero - b.numero);
   const sectionLabel = { fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' };
@@ -760,10 +760,31 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify,
         ) : (
           <div className="sd-card" style={{ padding: '4px 14px' }}>
             {historial.map((c) => (
-              <div key={c.id} className="sd-hist-row">
-                <span className="sd-mono sd-hist-date">{formatShortDate(c.fecha_pago)}</span>
-                <span className="sd-hist-label">Cuota {c.numero}</span>
-                <span className="sd-mono sd-hist-amount">{fmt(c.monto)}</span>
+              <div key={c.id} className="sd-hist-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light, rgba(0,0,0,0.05))' }}>
+                <div style={{ display: 'flex', gap: '12px', flex: 1, alignItems: 'center' }}>
+                  <span className="sd-mono sd-hist-date">{formatShortDate(c.fecha_pago)}</span>
+                  <span className="sd-hist-label">Cuota {c.numero}</span>
+                  <span className="sd-mono sd-hist-amount">{fmt(c.monto)}</span>
+                </div>
+                <button
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '0.7rem',
+                    background: 'rgba(239,68,68,0.1)',
+                    color: 'var(--red, #ef4444)',
+                    border: '1px solid rgba(239,68,68,0.2)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onClick={() => onUndoPayment(c.id)}
+                  disabled={loading}
+                  title="Deshacer este pago"
+                >
+                  ↶ Deshacer
+                </button>
               </div>
             ))}
           </div>
@@ -1020,6 +1041,43 @@ function EditarPrestamoModal({ prestamo, client, cuotas, onCancel, onConfirm, lo
   );
 }
 
+function UndoPaymentModal({ client, cuota, onCancel, onConfirm, loading }) {
+  if (!client || !cuota) return null;
+  return (
+    <div className="sd-modal-overlay" onClick={onCancel}>
+      <div className="sd-modal" style={{ maxWidth: '360px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="sd-modal-header">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} style={{ color: 'var(--amber)' }} />
+            <span className="sd-display" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Deshacer pago</span>
+          </div>
+          <button className="sd-icon-btn" style={{ width: '30px', height: '30px' }} onClick={onCancel}><X size={15} /></button>
+        </div>
+        <div className="sd-modal-body">
+          <div className="flex items-center gap-3" style={{ marginBottom: '14px' }}>
+            <div className="sd-avatar">{initials(client.nombre)}</div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{client.nombre}</div>
+          </div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: '12px' }}>
+            ¿Deshacer el pago de la cuota {cuota.numero}?
+          </p>
+          <div style={{ background: 'rgba(245,179,1,0.1)', padding: '10px 12px', borderRadius: '6px', marginBottom: '12px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '4px' }}>Importe: {fmt(cuota.monto)}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Fecha de pago: {formatShortDate(cuota.fecha_pago)}</div>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+            La cuota volverá a aparecer como pendiente.
+          </p>
+        </div>
+        <div className="sd-modal-actions">
+          <button className="sd-btn-outline" style={{ flex: 1 }} onClick={onCancel} disabled={loading}>Cancelar</button>
+          <button className="sd-btn-primary" style={{ flex: 1, background: 'rgba(245,179,1,0.2)', color: 'var(--amber)', border: '1px solid var(--amber)' }} disabled={loading} onClick={onConfirm}>{loading ? 'Deshaciendo...' : 'Deshacer pago'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DeleteConfirmModal({ client, onCancel, onConfirm, loading }) {
   if (!client) return null;
   return (
@@ -1064,6 +1122,7 @@ export default function SoloDiarioApp() {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [editingPrestamoId, setEditingPrestamoId] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [undoPaymentId, setUndoPaymentId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cuotasPorCliente, setCuotasPorCliente] = useState({});
   const [prestamoMap, setPrestamoMap] = useState({});
@@ -1350,6 +1409,26 @@ export default function SoloDiarioApp() {
     }
   };
 
+  const undoPayment = async (cuotaId) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('cuotas')
+        .update({ pagada: false, fecha_pago: null })
+        .eq('id', cuotaId);
+
+      if (error) throw error;
+
+      await loadData();
+      setUndoPaymentId(null);
+      showToast('Pago deshecho ✓');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const dateLabel = (() => {
     const s = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -1534,6 +1613,7 @@ export default function SoloDiarioApp() {
                   onDownload={() => setPdfPreviewId(selected.id)}
                   onDelete={() => deletePrestamo(selectedPrestamo)}
                   onModify={() => { setEditingPrestamoId(selectedPrestamo); setShowEditModal(true); }}
+                  onUndoPayment={(cuotaId) => setUndoPaymentId(cuotaId)}
                   loading={loading}
                 />
               )}
@@ -1577,6 +1657,19 @@ export default function SoloDiarioApp() {
           loading={loading}
         />
       )}
+      {undoPaymentId && (() => {
+        const allCuotas = Object.values(cuotasPorCliente).flat();
+        const cuota = allCuotas.find((c) => c.id === undoPaymentId);
+        return (
+          <UndoPaymentModal
+            client={selected}
+            cuota={cuota}
+            onCancel={() => setUndoPaymentId(null)}
+            onConfirm={() => undoPayment(undoPaymentId)}
+            loading={loading}
+          />
+        );
+      })()}
       {toast && <div className="sd-toast">{toast}</div>}
     </div>
   );
