@@ -1214,7 +1214,9 @@ export default function SoloDiarioApp() {
   const pdfPrestamo = selectedPrestamo;
 
   const overdueClients = clients.filter((c) => {
-    return Object.values(cuotasPorCliente).flat().some((q) => !q.pagada && new Date(q.fecha_vencimiento) < new Date());
+    const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
+    const clientCuotas = clientPrestamos.flatMap((p) => cuotasPorCliente[p.id] || []);
+    return clientCuotas.some((q) => !q.pagada && new Date(q.fecha_vencimiento) < new Date());
   });
 
   const enriquecerClientes = (clientList) => {
