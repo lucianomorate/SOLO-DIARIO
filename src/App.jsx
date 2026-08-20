@@ -17,7 +17,7 @@ const supabase = createClient(
 );
 
 const fmt = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0);
-const INTERVALS = { Semana: 7, Quincena: 15, Mensual: 30 };
+const INTERVALS = { Día: 1, Semana: 7, Quincena: 15, Mensual: 30 };
 const backTargets = { agregar: 'dashboard', nuevoCliente: 'agregar', nuevoPrestamo: 'agregar', nuevoPrestamoForm: 'nuevoPrestamo', prestamos: 'dashboard', pago: 'dashboard', clientesPrestamos: 'dashboard' };
 
 function initials(name) {
@@ -536,7 +536,7 @@ function NuevoClienteForm({ onSave, onCancel, showError }) {
       </div>
       <div>
         <span className="sd-label">Frecuencia de pago</span>
-        <Segmented options={['Semana', 'Quincena', 'Mensual']} value={frecuencia} onChange={setFrecuencia} />
+        <Segmented options={['Día', 'Semana', 'Quincena', 'Mensual']} value={frecuencia} onChange={setFrecuencia} />
       </div>
       <div>
         <span className="sd-label">Fecha de inicio</span>
@@ -668,7 +668,7 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
       </div>
       <div>
         <span className="sd-label">Frecuencia de pago</span>
-        <Segmented options={['Semana', 'Quincena', 'Mensual']} value={frecuencia} onChange={setFrecuencia} />
+        <Segmented options={['Día', 'Semana', 'Quincena', 'Mensual']} value={frecuencia} onChange={setFrecuencia} />
       </div>
       <div>
         <span className="sd-label">Fecha de inicio</span>
@@ -1220,7 +1220,7 @@ export default function SoloDiarioApp() {
     });
   };
 
-  const enrichedClients = enriquecerClientes(clients);
+  const enrichedClients = enriquecerClientes(clients).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es-AR'));
   const enrichedDueToday = dueToday.map((item) => {
     const allPrestamosCuotas = cuotasPorCliente[item.prestamo.id] || [];
     const completed = allPrestamosCuotas.length > 0 && allPrestamosCuotas.every((cu) => cu.pagada);
