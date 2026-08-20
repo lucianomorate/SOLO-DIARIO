@@ -1393,11 +1393,30 @@ export default function SoloDiarioApp() {
 
       // Calculate the starting date for new cuotas
       let fechaInicioNuevasCuotas = cambios.fechaInicio;
-      if (ultimaCuotaPagada) {
-        // Use the actual payment date (fecha_pago) if available, otherwise use fecha_vencimiento
+
+      // If user changed the start date, use it. Otherwise calculate from last paid cuota
+      const fechaInicioCambio = cambios.fechaInicio;
+      const fechaInicioOriginal = prestamo.fecha_inicio;
+
+      if (ultimaCuotaPagada && fechaInicioCambio === fechaInicioOriginal) {
+        // User didn't change the start date, calculate from last payment
         const fechaReferencia = ultimaCuotaPagada.fecha_pago || ultimaCuotaPagada.fecha_vencimiento;
-        // Start from the next date after the last paid cuota
         fechaInicioNuevasCuotas = calcularSiguienteFecha(fechaReferencia, cambios.frecuencia);
+      } else if (ultimaCuotaPagada) {
+        // User changed the start date, but we still need to start from where payments ended
+        // Use the first change date only if it's after the last payment
+        const [yearPago, monthPago, dayPago] = (ultimaCuotaPagada.fecha_pago || ultimaCuotaPagada.fecha_vencimiento).split('-').map(Number);
+        const [yearCambio, monthCambio, dayCambio] = fechaInicioCambio.split('-').map(Number);
+        const fechaPago = new Date(yearPago, monthPago - 1, dayPago);
+        const fechaCambio = new Date(yearCambio, monthCambio - 1, dayCambio);
+
+        if (fechaCambio > fechaPago) {
+          fechaInicioNuevasCuotas = fechaInicioCambio;
+        } else {
+          // If new start date is before or equal to last payment, calculate from payment
+          const fechaReferencia = ultimaCuotaPagada.fecha_pago || ultimaCuotaPagada.fecha_vencimiento;
+          fechaInicioNuevasCuotas = calcularSiguienteFecha(fechaReferencia, cambios.frecuencia);
+        }
       }
 
       // Generate new unpaid cuotas
