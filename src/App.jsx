@@ -1080,6 +1080,26 @@ export default function SoloDiarioApp() {
   const deleteClient = async (clientId) => {
     setLoading(true);
     try {
+      // First delete all cuotas for all prestamos of this client
+      const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === clientId);
+      for (const prestamo of clientPrestamos) {
+        const { error: cuotasError } = await supabase
+          .from('cuotas')
+          .delete()
+          .eq('prestamo_id', prestamo.id);
+        if (cuotasError) throw cuotasError;
+      }
+
+      // Then delete all prestamos
+      for (const prestamo of clientPrestamos) {
+        const { error: prestamoError } = await supabase
+          .from('prestamos')
+          .delete()
+          .eq('id', prestamo.id);
+        if (prestamoError) throw prestamoError;
+      }
+
+      // Finally delete the client
       const { error } = await supabase
         .from('clientes')
         .delete()
