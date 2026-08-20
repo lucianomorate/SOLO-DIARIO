@@ -287,7 +287,7 @@ function TopBar({ screen, goBack, dateLabel }) {
   );
 }
 
-function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, onSelectPrestamo, onBack, onDelete, loading }) {
+function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, onSelectPrestamo, onBack }) {
   if (!client) return null;
   const clientePrestamos = Object.values(prestamoMap || {}).filter((p) => p.cliente_id === client.id);
 
@@ -352,16 +352,6 @@ function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, on
           </div>
         )}
       </div>
-
-      {onDelete && (
-        <button className="sd-btn-danger" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={loading} onClick={() => {
-          if (window.confirm(`¿Eliminar cliente ${client.nombre}? Se eliminarán todos sus préstamos.`)) {
-            onDelete(client.id);
-          }
-        }}>
-          <Trash2 size={17} /> {loading ? 'Eliminando...' : 'Eliminar cliente'}
-        </button>
-      )}
 
       <button className="sd-btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={onBack}>
         <ChevronLeft size={17} /> Volver
@@ -1310,8 +1300,6 @@ export default function SoloDiarioApp() {
                   cuotasPorCliente={cuotasPorCliente}
                   onSelectPrestamo={openPagoFromPrestamo}
                   onBack={() => goTo('dashboard')}
-                  onDelete={deleteClient}
-                  loading={loading}
                 />
               )}
               {screen === 'clientesPrestamos' && selected && (
@@ -1322,8 +1310,6 @@ export default function SoloDiarioApp() {
                   cuotasPorCliente={cuotasPorCliente}
                   onSelectPrestamo={openPagoFromPrestamo}
                   onBack={() => goTo('dashboard')}
-                  onDelete={deleteClient}
-                  loading={loading}
                 />
               )}
               {screen === 'nuevoCliente' && (
