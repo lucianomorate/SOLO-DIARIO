@@ -1179,8 +1179,9 @@ export default function SoloDiarioApp() {
     const pagosHoyCount = allCuotas.filter((c) => c.fecha_pago === getToday()).length;
 
     const atrasados = clients.filter((c) => {
-      const cuotas = Object.values(cuotasPorCliente).flat().filter((q) => q.prestamo_id);
-      return cuotas.some((q) => !q.pagada && new Date(q.fecha_vencimiento) < new Date());
+      const clientPrestamos = Object.values(prestamoMap).filter((p) => p.cliente_id === c.id);
+      const clientCuotas = clientPrestamos.flatMap((p) => cuotasPorCliente[p.id] || []);
+      return clientCuotas.some((q) => !q.pagada && new Date(q.fecha_vencimiento) < new Date());
     }).length;
 
     const carteraPendiente = allCuotas
