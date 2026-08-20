@@ -102,6 +102,7 @@ function MoneyInput({ value, onChange, placeholder }) {
 function MiniCalendar({ selected, onSelect }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const base = new Date();
+  const today = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
   const viewDate = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1);
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -133,8 +134,14 @@ function MiniCalendar({ selected, onSelect }) {
           const isoDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           const displayValue = `${d} ${monthWord}`;
           const isSelected = selected === isoDate;
+          const isToday = isoDate === today;
+          const dayStyle = isSelected
+            ? { background: 'var(--amber)', color: '#15130F', fontWeight: 700 }
+            : isToday
+            ? { border: '2px solid var(--amber)', fontWeight: 600 }
+            : {};
           return (
-            <button key={i} onClick={() => onSelect(isoDate)} className="sd-day-cell" style={isSelected ? { background: 'var(--amber)', color: '#15130F', fontWeight: 700 } : {}}>
+            <button key={i} onClick={() => onSelect(isoDate)} className="sd-day-cell" style={dayStyle}>
               {d}
             </button>
           );
