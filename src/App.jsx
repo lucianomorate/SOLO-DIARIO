@@ -1394,8 +1394,10 @@ export default function SoloDiarioApp() {
       // Calculate the starting date for new cuotas
       let fechaInicioNuevasCuotas = cambios.fechaInicio;
       if (ultimaCuotaPagada) {
+        // Use the actual payment date (fecha_pago) if available, otherwise use fecha_vencimiento
+        const fechaReferencia = ultimaCuotaPagada.fecha_pago || ultimaCuotaPagada.fecha_vencimiento;
         // Start from the next date after the last paid cuota
-        fechaInicioNuevasCuotas = calcularSiguienteFecha(ultimaCuotaPagada.fecha_vencimiento, cambios.frecuencia);
+        fechaInicioNuevasCuotas = calcularSiguienteFecha(fechaReferencia, cambios.frecuencia);
       }
 
       // Generate new unpaid cuotas
