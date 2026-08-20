@@ -287,7 +287,7 @@ function TopBar({ screen, goBack, dateLabel }) {
   );
 }
 
-function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, onSelectPrestamo, onBack, onEditPrestamo }) {
+function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, onSelectPrestamo, onBack }) {
   if (!client) return null;
   const clientePrestamos = Object.values(prestamoMap || {}).filter((p) => p.cliente_id === client.id);
 
@@ -317,25 +317,24 @@ function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, on
               const cuotaPendiente = nextCuota ? nextCuota.monto : 0;
 
               return (
-                <div key={p.id} style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
-                  <button
-                    onClick={() => onSelectPrestamo(p.id)}
-                    style={{
-                      flex: 1,
-                      padding: '14px',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius)',
-                      background: 'var(--card-bg)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.2s'
-                    }}
-                    className="hover:bg-opacity-80"
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{fmt(cuotaPendiente)}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{cuotasPagadas}/{cuotas.length} cuotas</div>
-                    </div>
+                <button
+                  key={p.id}
+                  onClick={() => onSelectPrestamo(p.id)}
+                  style={{
+                    padding: '14px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--card-bg)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s'
+                  }}
+                  className="hover:bg-opacity-80"
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{fmt(cuotaPendiente)}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{cuotasPagadas}/{cuotas.length} cuotas</div>
+                  </div>
                   <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div
                       style={{
@@ -346,30 +345,8 @@ function PrestamosCliente({ client, prestamos, prestamoMap, cuotasPorCliente, on
                       }}
                     />
                   </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '6px' }}>{progreso}% completado</div>
-                  </button>
-                  {onEditPrestamo && (
-                    <button
-                      onClick={() => onEditPrestamo(p.id)}
-                      style={{
-                        width: '40px',
-                        padding: '14px 10px',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius)',
-                        background: 'var(--card-bg)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s'
-                      }}
-                      className="hover:bg-opacity-80"
-                      title="Modificar préstamo"
-                    >
-                      <FileText size={18} style={{ color: 'var(--amber)' }} />
-                    </button>
-                  )}
-                </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '6px' }}>{progreso}% completado</div>
+                </button>
               );
             })}
           </div>
@@ -721,7 +698,7 @@ function NuevoPrestamoForm({ client, onSave, onCancel }) {
   );
 }
 
-function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }) {
+function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, onModify, loading }) {
   if (!client) return null;
   const historial = cuotas.filter((c) => c.pagada).sort((a, b) => a.numero - b.numero);
   const sectionLabel = { fontSize: '0.74rem', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' };
@@ -804,6 +781,10 @@ function PagoScreen({ client, cuotas, onConfirm, onDownload, onDelete, loading }
 
       <button className="sd-btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={onDownload}>
         <FileText size={17} /> Exportar PDF
+      </button>
+
+      <button className="sd-btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(245,158,11,0.2)', color: 'var(--amber)', border: '1px solid var(--amber)' }} onClick={onModify}>
+        <FileText size={17} /> Modificar préstamo
       </button>
 
       {completed && (
